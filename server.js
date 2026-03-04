@@ -5,25 +5,76 @@ import fetch from 'node-fetch';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+// --- STORAGE (in RAM) ---
+const usedHardwareIds = new Set(); // Primary: blocks duplicate hardware IDs
+const ipLog = [];                  // Secondary: logs all requests
+
+// --- CONFIGURATION ---
+const ALLOWED_ORIGIN = 'https://limon-flix.kesug.com'; // Your website
+
+app.use(cors({
+    origin: ALLOWED_ORIGIN // Only allow your website
+}));
 app.use(express.json());
 
-// 👇 PUT IT RIGHT HERE - Health check endpoint
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');  // Super fast, no processing needed
+// --- MIDDLEWARE: Check Origin & Hardware ID ---
+app.use('/api/nftoken', (req, res, next) => {
+    // 1. Check Origin (Security)
+    const requestOrigin = req.headers.origin;
+    if (requestOrigin !== ALLOWED_ORIGIN) {
+        return res.status(403).json({ error: 'Access denied: Invalid origin' });
+    }
+
+    // 2. Get identifiers from request body
+    const { hardwareId } = req.body;
+    const userIp = req.ip || req.connection.remoteAddress;
+
+    if (!hardwareId) {
+        return res.status(400).json({ error: 'Missing hardwareId' });
+    }
+
+    // 3. Check if hardware ID has been used before (PRIMARY BLOCK)
+    if (usedHardwareIds.has(hardwareId)) {
+        return res.status(429).json({ 
+            error: 'This device has already made a request',
+            code: 'DEVICE_LIMIT_REACHED'
+        });
+    }
+
+    // 4. Log the IP (SECONDARY - just recording)
+    ipLog.push({
+        hardwareId: hardwareId,
+        ip: userIp,
+        timestamp: new Date().toISOString()
+    });
+
+    // 5. Store the hardware ID to block future requests
+    usedHardwareIds.add(hardwareId);
+
+    // 6. Console logging for you
+    console.log(`✅ New unique device: ${hardwareId}`);
+    console.log(`   From IP: ${userIp}`);
+    console.log(`   Total unique devices: ${usedHardwareIds.size}`);
+    console.log(`   Total requests logged: ${ipLog.length}`);
+
+    // 7. Attach data to request for the next function
+    req.deviceInfo = { hardwareId, userIp };
+    next();
 });
 
-// Proxy endpoint
+// --- YOUR EXISTING PROXY ENDPOINT ---
 app.post('/api/nftoken', async (req, res) => {
     try {
-        const { cookies } = req.body;
+        const { cookies } = req.body; // Cookies from frontend
         
-        console.log('Proxying request to Netflix...');
-        
+        // Optional: Use the device info we saved
+        console.log(`Proxying request for device: ${req.deviceInfo.hardwareId}`);
+
+        // Your existing fetch to Netflix...
         const response = await fetch('https://android13.prod.ftl.netflix.com/graphql', {
             method: 'POST',
             headers: {
-                'User-Agent': 'com.netflix.mediaclient/63884 (Linux; U; Android 13; ro; M2007J3SG; Build/TQ1A.230205.001.A2; Cronet/143.0.7445.0)',
+                'User-Agent': 'com.netflix.mediaclient/63884 ...',
                 'Content-Type': 'application/json',
                 'Cookie': Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join('; ')
             },
@@ -48,6 +99,16 @@ app.post('/api/nftoken', async (req, res) => {
     }
 });
 
+// --- OPTIONAL: Stats Endpoint (for you to monitor) ---
+app.get('/api/stats', (req, res) => {
+    // You might want to add a simple secret key here for security
+    res.json({
+        unique_devices: usedHardwareIds.size,
+        total_requests_logged: ipLog.length,
+        recent_ips: ipLog.slice(-10)
+    });
+});
+
 app.listen(PORT, () => {
-    console.log(`✅ Proxy server running on port ${PORT}`);
+    console.log(`✅ Proxy running with device tracking`);
 });
