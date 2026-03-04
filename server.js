@@ -41,13 +41,13 @@ app.use('/api/nftoken', (req, res, next) => {
         return res.status(400).json({ error: 'Missing hardwareId' });
     }
 
-    // 3. Check if hardware ID has been used before (PRIMARY BLOCK)
-    if (usedHardwareIds.has(hardwareId)) {
-        return res.status(429).json({ 
-            error: 'This device has already made a request',
-            code: 'DEVICE_LIMIT_REACHED'
-        });
-    }
+    // 🚫 DISABLED: Hardware ID limit check
+    // if (usedHardwareIds.has(hardwareId)) {
+    //     return res.status(429).json({ 
+    //         error: 'This device has already made a request',
+    //         code: 'DEVICE_LIMIT_REACHED'
+    //     });
+    // }
 
     // 4. Log the IP (SECONDARY - just recording)
     ipLog.push({
@@ -56,13 +56,12 @@ app.use('/api/nftoken', (req, res, next) => {
         timestamp: new Date().toISOString()
     });
 
-    // 5. Store the hardware ID to block future requests
-    usedHardwareIds.add(hardwareId);
+    // 🚫 DISABLED: Store hardware ID
+    // usedHardwareIds.add(hardwareId);
 
     // 6. Console logging for you
-    console.log(`✅ New unique device: ${hardwareId}`);
+    console.log(`📱 Request from device: ${hardwareId}`);
     console.log(`   From IP: ${userIp}`);
-    console.log(`   Total unique devices: ${usedHardwareIds.size}`);
     console.log(`   Total requests logged: ${ipLog.length}`);
 
     // 7. Attach data to request for the next function
@@ -118,7 +117,7 @@ app.get('/api/stats', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`✅ Proxy running with device tracking`);
+    console.log(`✅ Proxy running with device tracking (LIMITS DISABLED)`);
     console.log(`📍 Health check: /health`);
     console.log(`📍 NFToken endpoint: /api/nftoken`);
     console.log(`📍 Stats endpoint: /api/stats`);
