@@ -27,10 +27,12 @@ app.get('/health', (req, res) => {
 app.use('/api/nftoken', (req, res, next) => {
     // 1. Check Origin (Security)
     const requestOrigin = req.headers.origin;
-    if (requestOrigin !== ALLOWED_ORIGIN) {
+    
+    // If ALLOWED_ORIGIN is '*', skip origin check
+    if (ALLOWED_ORIGIN !== '*' && requestOrigin !== ALLOWED_ORIGIN) {
         return res.status(403).json({ error: 'Access denied: Invalid origin' });
     }
-
+    
     // 2. Get identifiers from request body
     const { hardwareId } = req.body;
     const userIp = req.ip || req.connection.remoteAddress;
