@@ -79,24 +79,24 @@ app.post('/api/nftoken', async (req, res) => {
         console.log(`Proxying request for device: ${req.deviceInfo.hardwareId}`);
 
         // Your existing fetch to Netflix...
-        const response = await fetch('https://android13.prod.ftl.netflix.com/graphql', {
-            method: 'POST',
-            headers: {
-                'User-Agent': 'com.netflix.mediaclient/63884 ...',
-                'Content-Type': 'application/json',
-                'Cookie': Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join('; ')
-            },
-            body: JSON.stringify({
-                operationName: 'CreateAutoLoginToken',
-                variables: { scope: 'WEBVIEW_MOBILE_STREAMING' },
-                extensions: { 
-                    persistedQuery: { 
-                        version: 102, 
-                        id: '76e97129-f4b5-41a0-a73c-12e674896849' 
-                    } 
-                }
-            })
-        });
+const response = await fetch('https://android13.prod.ftl.netflix.com/graphql', {
+    method: 'POST',
+    headers: {
+        'User-Agent': 'com.netflix.mediaclient/63884 (Linux; U; Android 13; ro; M2007J3SG; Build/TQ1A.230205.001.A2; Cronet/143.0.7445.0)',
+        'Content-Type': 'application/json',
+        'Cookie': Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join('; ')
+    },
+    body: JSON.stringify({
+        operationName: 'CreateAutoLoginToken',
+        variables: { scope: 'WEBVIEW_MOBILE_STREAMING' },
+        extensions: { 
+            persistedQuery: { 
+                version: 102, 
+                id: '76e97129-f4b5-41a0-a73c-12e674896849' 
+            } 
+        }
+    })
+});
 
         const data = await response.json();
         res.json(data);
