@@ -8,6 +8,11 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// 👇 PUT IT RIGHT HERE - Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');  // Super fast, no processing needed
+});
+
 // Proxy endpoint
 app.post('/api/nftoken', async (req, res) => {
     try {
