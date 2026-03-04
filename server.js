@@ -73,6 +73,13 @@ app.use('/api/nftoken', (req, res, next) => {
 app.post('/api/nftoken', async (req, res) => {
     try {
         const { cookies } = req.body; // Cookies from frontend
+
+         // ✅ ADD THIS DEBUG LOGGING
+        console.log("=== BACKEND RECEIVED ===");
+        console.log("Device:", req.deviceInfo?.hardwareId);
+        console.log("Cookies keys:", Object.keys(cookies));
+        console.log("NetflixId length:", cookies.NetflixId?.length || 0);
+        console.log("SecureNetflixId length:", cookies.SecureNetflixId?.length || 0);
         
         // Optional: Use the device info we saved
         console.log(`Proxying request for device: ${req.deviceInfo.hardwareId}`);
@@ -96,8 +103,12 @@ const response = await fetch('https://android13.prod.ftl.netflix.com/graphql', {
         }
     })
 });
+                // ✅ ADD THESE LINES
+        console.log('📥 Netflix response status:', response.status);
 
         const data = await response.json();
+
+     console.log('📦 Netflix response data:', JSON.stringify(data, null, 2));
         res.json(data);
         
     } catch (error) {
