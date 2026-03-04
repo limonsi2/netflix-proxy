@@ -10,7 +10,9 @@ const usedHardwareIds = new Set(); // Primary: blocks duplicate hardware IDs
 const ipLog = [];                  // Secondary: logs all requests
 
 // --- CONFIGURATION ---
-const ALLOWED_ORIGIN = 'https://limon-flix.kesug.com'; // Your website
+//const ALLOWED_ORIGIN = 'https://limon-flix.kesug.com'; // Your website
+const ALLOWED_ORIGIN = '*';
+
 
 app.use(cors({
     origin: ALLOWED_ORIGIN // Only allow your website
