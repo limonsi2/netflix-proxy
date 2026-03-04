@@ -13,11 +13,15 @@ const ipLog = [];                  // Secondary: logs all requests
 //const ALLOWED_ORIGIN = 'https://limon-flix.kesug.com'; // Your website
 const ALLOWED_ORIGIN = '*';
 
-
 app.use(cors({
     origin: ALLOWED_ORIGIN // Only allow your website
 }));
 app.use(express.json());
+
+// --- HEALTH CHECK ENDPOINT (Add this back!) ---
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
 
 // --- MIDDLEWARE: Check Origin & Hardware ID ---
 app.use('/api/nftoken', (req, res, next) => {
@@ -113,4 +117,7 @@ app.get('/api/stats', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`✅ Proxy running with device tracking`);
+    console.log(`📍 Health check: /health`);
+    console.log(`📍 NFToken endpoint: /api/nftoken`);
+    console.log(`📍 Stats endpoint: /api/stats`);
 });
